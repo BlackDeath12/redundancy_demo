@@ -7,6 +7,7 @@
 #include <arpa/inet.h>
 #include <time.h>
 #include <stdbool.h>
+#include <signal.h>
 
 #define PORT 2020
 #define MAX_DESTINATION_SIZE 16
@@ -15,6 +16,8 @@
 #define CMD_USAGE "Usage: ./server [Arguments (Optinal)] [local addr] [peer addr] or ./server -p [local addr]\n"
 
 int main(int argc, char** argv){
+
+    signal(SIGPIPE, SIG_IGN);
 
     char* local_addr;
     bool primary_computer = false;
@@ -102,7 +105,7 @@ int main(int argc, char** argv){
         return 1;
     }
 
-    char reply_buffer[MAX_BUFFER] = {"10.0.2.11:\"Computer still alived.\"\n"};
+    char reply_buffer[] = "alive";
     if(primary_computer){
         
         if(listen(server_fd, 4) < 0){
@@ -136,7 +139,7 @@ int main(int argc, char** argv){
 
         printf("Connected to %s:%d\n", destination_addr, ntohs(client_addr.sin_port));
 
-        char initial_reply[] = {"initial_reply.\n"};
+        char initial_reply[] = {"alive"};
         ssize_t sent_bytes = send(client_fd, initial_reply, sizeof(initial_reply), 0);
         if (sent_bytes < 0){
             printf("Error sending buffer to client!\n");
