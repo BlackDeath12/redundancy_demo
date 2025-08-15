@@ -10,7 +10,8 @@
 #include "network.h"
 #include <signal.h>
 
-#define PORT 2020
+#define TCP_PORT 2020
+#define UDP_PORT 2020
 #define PEER_COMP_ADDR "10.0.2.10"
 #define MAX_DESTINATION_SIZE 16
 #define MAX_BUFFER 1024
@@ -38,6 +39,8 @@ int main(int argc, char** argv){
     bool runScript = false;
 
     int message_counter = 0;
+
+    int sim_case = -1;
 
     if(argc > 1){
         if(argc < 3){
@@ -76,10 +79,12 @@ int main(int argc, char** argv){
 
     SOCKET server_sock, server_udp_sock;
     char port[6];
-    sprintf(port, "%d", PORT);
+    sprintf(port, "%d", TCP_PORT);
+    char udp_port[6];
+    sprintf(udp_port, "%d", UDP_PORT);
 
     server_sock = create_socket(local_addr, port);
-    server_udp_sock = create_udp_socket(local_addr, port);
+    server_udp_sock = create_udp_socket(local_addr, udp_port);
 
     primary_computer ? printf("\nRunning as primary computer...\n") : printf("\nRunning as secondary computer...\n");
     printf("Server started!\n\n");
@@ -95,7 +100,7 @@ int main(int argc, char** argv){
     struct client_info_t* udp_clients = NULL;
     char alive_buffer[] = ALIVE_MESSAGE;
 
-    if(!primary_computer) attempt_connection(&clients, peer_comp_addr, PORT, alive_buffer);
+    if(!primary_computer) attempt_connection(&clients, peer_comp_addr, TCP_PORT, alive_buffer);
 
     while(true){
         fd_set fd;
@@ -119,9 +124,23 @@ int main(int argc, char** argv){
 
         if(FD_ISSET(server_udp_sock, &fd)){
             struct client_info_t* client = get_client(&udp_clients, -1);
+            
+            memset(client->udp_request, 0, sizeof(client->udp_request));
 
-            int received_bytes = recvfrom(server_udp_sock, client->udp_request, MAX_UDP_REQUEST_SIZE, 0, (struct sockaddr*)&client->udp_addr, &client->address_length);
+            ssize_t received_bytes = recvfrom(server_udp_sock, client->udp_request, MAX_UDP_REQUEST_SIZE, 0, (struct sockaddr*)&client->udp_addr, &client->address_length);
+            printf("Received UDP bytes: %ld From: %s\n", received_bytes, get_client_udp_address(client));
+            
+            printf("Received UDP string: %s\n", client->udp_request);
 
+            if(strcmp(client->udp_request, "reboot_primary") == 0){
+                sim_case = REBOOT_PRIMARY;
+            }
+            else if(strcmp(client->udp_request, "reboot_secondary") == 0){
+                sim_case = REBOOT_SECONDARY;
+            }
+            else if(strcmp(client->udp_request, "reboot_both") == 0){
+                sim_case = REBOOT_BOTH;
+            }
         }
 
         struct client_info_t* client = clients;
@@ -141,13 +160,13 @@ int main(int argc, char** argv){
                 }
                 
                 // read new bytes in
-                int bytes_received = recv(client->socket, client->request + client->received, MAX_REQUEST_SIZE - client->received, 0);
+                int bytes_received = recv(client->socket, client->tcp_request + client->received, MAX_REQUEST_SIZE - client->received, 0);
                 //printf("Recieved bytes: %d From: %s\n", bytes_received, get_client_address(client));
                 if(bytes_received < 0){
                     printf("Error receiving last message!\n");
                 }
 
-                if(strcmp(get_client_address(client), peer_comp_addr) == 0 && strcmp(client->request, ALIVE_MESSAGE) == 0 && bytes_received > 0){
+                if(strcmp(get_client_address(client), peer_comp_addr) == 0 && strcmp(client->tcp_request, ALIVE_MESSAGE) == 0 && bytes_received > 0){
                     time_t currentTime;
                     time(&currentTime);
                     time(&last_peer_message);
@@ -178,7 +197,7 @@ int main(int argc, char** argv){
             }
 
             if(!primary_computer && time_elapsed(&reconnect_timer, RECONNECT_TIME)){
-                attempt_connection(&clients, peer_comp_addr, PORT, alive_buffer);
+                attempt_connection(&clients, peer_comp_addr, TCP_PORT, alive_buffer);
             }
         }
         else{

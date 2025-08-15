@@ -21,12 +21,18 @@
 #define MAX_REQUEST_SIZE 1023
 #define MAX_UDP_REQUEST_SIZE 1024
 
+enum{
+    REBOOT_PRIMARY,
+    REBOOT_SECONDARY,
+    REBOOT_BOTH
+};
+
 struct client_info_t {
     socklen_t address_length;
     struct sockaddr_in address;
     struct sockaddr_in udp_addr;
     SOCKET socket;
-    char request[MAX_REQUEST_SIZE+1];
+    char tcp_request[MAX_REQUEST_SIZE+1];
     char udp_request[MAX_UDP_REQUEST_SIZE];
     int received;
     int message_size;
