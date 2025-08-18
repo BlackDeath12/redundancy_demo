@@ -282,7 +282,7 @@ void drop_client(struct client_info_t** clients, struct client_info_t* client){
 
 void drop_udp_client(struct client_info_t** clients, struct client_info_t* client){
     
-    CLOSESOCKET(client->udp_socket);
+    //CLOSESOCKET(client->udp_socket);
 
     struct client_info_t** p = clients;
 

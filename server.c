@@ -164,6 +164,7 @@ int main(int argc, char** argv){
                         printf("Peer computer is alive! Elapsed time: %lds\n", time(NULL) - startTime);
                     }
                     send(client->tcp_socket, alive_buffer, sizeof(alive_buffer), 0);
+
                 }
                 else{
                     drop_client(&clients, client);
@@ -201,6 +202,7 @@ int main(int argc, char** argv){
         }
 
         if(!peer_connected){
+
             if(!runScript){
                 runScript = true;
                 system("/home/spacecloud/redundancy_demo/script.sh");
