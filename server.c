@@ -12,7 +12,7 @@
 
 #define TCP_PORT 2020
 #define UDP_PORT 2020
-#define PEER_COMP_ADDR "10.0.2.10"
+#define PEER_COMP_ADDR "10.0.2.11"
 #define MAX_DESTINATION_SIZE 16
 #define MAX_BUFFER 1024
 #define ALIVE_MESSAGE "alive"
@@ -99,8 +99,9 @@ int main(int argc, char** argv){
     if(!primary_computer) attempt_connection(&clients, peer_comp_addr, TCP_PORT, alive_buffer);
 
     while(true){
-        fd_set fd;
-        fd = wait_on_clients(clients, server_sock, server_udp_sock);
+        fd_set fd, fd_udp;
+        fd = wait_on_clients(clients, server_sock);
+        fd_udp = wait_on_udp_clients(udp_clients, server_udp_sock);
 
         if(FD_ISSET(server_sock, &fd)){
 
@@ -118,8 +119,8 @@ int main(int argc, char** argv){
             }
         }
 
-        if(FD_ISSET(server_udp_sock, &fd)){
-            struct client_info_t* client = get_client(&udp_clients, -1);
+        if(FD_ISSET(server_udp_sock, &fd_udp)){
+            struct client_info_t* client = get_udp_client(&udp_clients, -1);
             
             memset(client->udp_request, 0, sizeof(client->udp_request));
 
