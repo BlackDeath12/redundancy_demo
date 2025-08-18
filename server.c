@@ -43,10 +43,6 @@ int main(int argc, char** argv){
     int sim_case = -1;
 
     if(argc > 1){
-        if(argc < 3){
-            printf(CMD_USAGE);
-            return 1;
-        }
 
         int argIdx = 1;
         if(argv[1][0] == '-'){
@@ -111,8 +107,8 @@ int main(int argc, char** argv){
             struct client_info_t* client = get_client(&clients, -1);
 
             // create client socket
-            client->socket = accept(server_sock, (struct sockaddr*) &client->address, &client->address_length);
-            if(!ISVALIDSOCKET(client->socket)){
+            client->tcp_socket = accept(server_sock, (struct sockaddr*) &client->address, &client->address_length);
+            if(!ISVALIDSOCKET(client->tcp_socket)){
                 fprintf(stderr, "accept() failed with error: %d", GETSOCKETERRNO());
             }
 
@@ -128,28 +124,20 @@ int main(int argc, char** argv){
             memset(client->udp_request, 0, sizeof(client->udp_request));
 
             ssize_t received_bytes = recvfrom(server_udp_sock, client->udp_request, MAX_UDP_REQUEST_SIZE, 0, (struct sockaddr*)&client->udp_addr, &client->address_length);
-            printf("Received UDP bytes: %ld From: %s\n", received_bytes, get_client_udp_address(client));
             
-            printf("Received UDP string: %s\n", client->udp_request);
-
-            if(strcmp(client->udp_request, "reboot_primary") == 0){
-                sim_case = REBOOT_PRIMARY;
-            }
-            else if(strcmp(client->udp_request, "reboot_secondary") == 0){
-                sim_case = REBOOT_SECONDARY;
-            }
-            else if(strcmp(client->udp_request, "reboot_both") == 0){
-                sim_case = REBOOT_BOTH;
-            }
+            client->received = received_bytes;
+            printf("Received datagram from: %s\n", get_client_udp_address(client));
+            
         }
 
         struct client_info_t* client = clients;
+        struct client_info_t* udp_client = udp_clients;
         while(client){
             
             struct client_info_t* next_client = client->next;
 
             // Check if this client has pending request
-            if(FD_ISSET(client->socket, &fd)){
+            if(FD_ISSET(client->tcp_socket, &fd)){
 
                 // Request too big
                 if(MAX_REQUEST_SIZE <= client->received){
@@ -160,7 +148,7 @@ int main(int argc, char** argv){
                 }
                 
                 // read new bytes in
-                int bytes_received = recv(client->socket, client->tcp_request + client->received, MAX_REQUEST_SIZE - client->received, 0);
+                int bytes_received = recv(client->tcp_socket, client->tcp_request + client->received, MAX_REQUEST_SIZE - client->received, 0);
                 //printf("Recieved bytes: %d From: %s\n", bytes_received, get_client_address(client));
                 if(bytes_received < 0){
                     printf("Error receiving last message!\n");
@@ -174,7 +162,7 @@ int main(int argc, char** argv){
                     if(time_elapsed(&alive_timer, ALIVE_MSG_TIME)){
                         printf("Peer computer is alive! Elapsed time: %lds\n", time(NULL) - startTime);
                     }
-                    send(client->socket, alive_buffer, sizeof(alive_buffer), 0);
+                    send(client->tcp_socket, alive_buffer, sizeof(alive_buffer), 0);
                 }
                 else{
                     drop_client(&clients, client);
@@ -184,6 +172,27 @@ int main(int argc, char** argv){
 
             client = next_client;
         }
+        while (udp_client){
+
+            struct client_info_t* next_client = udp_client->next;
+
+            printf("Received UDP string: %s\n", udp_client->udp_request);
+
+            if(strcmp(udp_client->udp_request, "reboot_primary") == 0){
+                sim_case = REBOOT_PRIMARY;
+            }
+            else if(strcmp(udp_client->udp_request, "reboot_secondary") == 0){
+                sim_case = REBOOT_SECONDARY;
+            }
+            else if(strcmp(udp_client->udp_request, "reboot_both") == 0){
+                sim_case = REBOOT_BOTH;
+            }
+
+            drop_client(&udp_clients, udp_client);
+
+            udp_client = next_client;
+        }
+        
 
         if(time_elapsed(&last_peer_message, PEER_TIMEOUT)){
             printf("Peer disconnected!\n");
@@ -205,6 +214,27 @@ int main(int argc, char** argv){
                 runScript = false;
             }
         }
+
+        switch (sim_case)
+        {
+        case REBOOT_PRIMARY:
+
+            sim_case = -1;
+            break;
+        case REBOOT_SECONDARY:
+
+            sim_case = -1;
+            break;
+        case REBOOT_BOTH:
+
+            sim_case = -1;
+            break;
+        default:
+
+            sim_case = -1;
+            break;
+        }
+
     }
 
     close(server_udp_sock);
@@ -229,17 +259,17 @@ bool time_elapsed(time_t* last_time, time_t total_time){
 
 bool attempt_connection(struct client_info_t** clients, char* address, int port, char* buffer){
     struct client_info_t* client = get_client(clients, -1);
-    client->socket = socket(AF_INET, SOCK_STREAM, 0);
+    client->tcp_socket = socket(AF_INET, SOCK_STREAM, 0);
     client->address.sin_addr.s_addr = inet_addr(address);
     client->address.sin_port = htons(port);
     client->address.sin_family = AF_INET;
 
-    int result = connect(client->socket, (struct sockaddr*)&client->address, sizeof(client->address));
+    int result = connect(client->tcp_socket, (struct sockaddr*)&client->address, sizeof(client->address));
     if(result < 0){
         printf("Couldn't connect to server!\n");
         drop_client(clients, client);
     }
     else{
-        send(client->socket, buffer, sizeof(buffer), 0);
+        send(client->tcp_socket, buffer, sizeof(buffer), 0);
     }
 }
