@@ -128,12 +128,8 @@ fd_set wait_on_clients(struct client_info_t* clients, SOCKET server, SOCKET udp_
     struct client_info_t* client = clients;
     while(client){
         FD_SET(client->tcp_socket, &reads);
-        FD_SET(client->udp_socket, &reads);
         if(client->tcp_socket > max_socket){
             max_socket = client->tcp_socket;
-        }
-        if(client->udp_socket > max_socket){
-            max_socket = client->udp_socket;
         }
         client = client->next;
     }
@@ -156,9 +152,6 @@ struct client_info_t* get_client(struct client_info_t** clients, SOCKET socket){
     while(client){
 
         if(client->tcp_socket == socket){
-            return client;
-        }
-        else if(client->udp_socket == socket){
             return client;
         }
         client = client->next;
@@ -203,7 +196,6 @@ const char* get_client_udp_address(struct client_info_t* client){
 void drop_client(struct client_info_t** clients, struct client_info_t* client){
     
     CLOSESOCKET(client->tcp_socket);
-    CLOSESOCKET(client->udp_socket);
 
     struct client_info_t** p = clients;
 

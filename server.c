@@ -189,10 +189,9 @@ int main(int argc, char** argv){
             }
 
             drop_client(&udp_clients, udp_client);
-
+            
             udp_client = next_client;
         }
-        
 
         if(time_elapsed(&last_peer_message, PEER_TIMEOUT)){
             printf("Peer disconnected!\n");
@@ -202,7 +201,7 @@ int main(int argc, char** argv){
         if(!peer_connected){
             if(!runScript){
                 runScript = true;
-                system("./script.sh");
+                system("/home/spacecloud/redundancy_demo/script.sh");
             }
 
             if(!primary_computer && time_elapsed(&reconnect_timer, RECONNECT_TIME)){
@@ -218,16 +217,23 @@ int main(int argc, char** argv){
         switch (sim_case)
         {
         case REBOOT_PRIMARY:
-
+            if(primary_computer){
+                system("/home/spacecloud/redundancy_demo/reboot.sh");
+            }
             sim_case = -1;
+
             break;
         case REBOOT_SECONDARY:
-
+            if(!primary_computer){
+                system("/home/spacecloud/redundancy_demo/reboot.sh");
+            }
             sim_case = -1;
+
             break;
         case REBOOT_BOTH:
-
+            system("/home/spacecloud/redundancy_demo/reboot.sh");
             sim_case = -1;
+
             break;
         default:
 
