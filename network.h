@@ -136,7 +136,7 @@ fd_set wait_on_clients(struct client_info_t* clients, SOCKET server){
     // Wait on sockets
     //printf("This select. \n");
     if(select(max_socket+1, &reads, 0, 0, &select_wait) < 0){
-        fprintf(stderr, "select() failed with error: %d", GETSOCKETERRNO());
+        fprintf(stderr, "this1 select() failed with error: %d", GETSOCKETERRNO());
         exit(1);
     }
     
@@ -168,7 +168,7 @@ fd_set wait_on_udp_clients(struct client_info_t* clients, SOCKET server){
     // Wait on sockets
     //printf("This select. \n");
     if(select(max_socket+1, &reads, 0, 0, &select_wait) < 0){
-        fprintf(stderr, "select() failed with error: %d", GETSOCKETERRNO());
+        fprintf(stderr, "this select() failed with error: %d", GETSOCKETERRNO());
         exit(1);
     }
     
