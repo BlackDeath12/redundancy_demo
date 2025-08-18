@@ -279,3 +279,23 @@ void drop_client(struct client_info_t** clients, struct client_info_t* client){
     exit(1);
 
 }
+
+void drop_udp_client(struct client_info_t** clients, struct client_info_t* client){
+    
+    CLOSESOCKET(client->udp_socket);
+
+    struct client_info_t** p = clients;
+
+    while(*p){
+        if(*p == client){
+            *p = client->next;
+            free(client);
+            return;
+        }
+        p = & ((*p)->next);
+    }
+
+    fprintf(stderr, "drop_client: client not found\n");
+    exit(1);
+
+}

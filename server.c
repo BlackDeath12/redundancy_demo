@@ -19,7 +19,7 @@
 
 #define PEER_TIMEOUT 5
 #define ALIVE_MSG_TIME 1
-#define RECONNECT_TIME 2
+#define RECONNECT_TIME 1
 
 #define CMD_USAGE "Usage: ./server [Arguments (Optinal)] [local addr] [peer addr]\n"
 
@@ -99,12 +99,9 @@ int main(int argc, char** argv){
     if(!primary_computer) attempt_connection(&clients, peer_comp_addr, TCP_PORT, alive_buffer);
 
     while(true){
-        printf("before here!\n");
         fd_set fd, fd_udp;
         fd = wait_on_clients(clients, server_sock);
-        printf("before here1!\n");
         fd_udp = wait_on_udp_clients(udp_clients, server_udp_sock);
-        printf("before here2!\n");
 
         if(FD_ISSET(server_sock, &fd)){
 
@@ -122,7 +119,6 @@ int main(int argc, char** argv){
             }
         }
 
-        printf("here!\n");
         if(FD_ISSET(server_udp_sock, &fd_udp)){
             struct client_info_t* client = get_udp_client(&udp_clients, -1);
             
@@ -169,7 +165,10 @@ int main(int argc, char** argv){
                     }
                     send(client->tcp_socket, alive_buffer, sizeof(alive_buffer), 0);
                 }
-                drop_client(&clients, client);
+                else{
+                    drop_client(&clients, client);
+                }
+                
 
             }
 
@@ -191,7 +190,7 @@ int main(int argc, char** argv){
                 sim_case = REBOOT_BOTH;
             }
 
-            drop_client(&udp_clients, udp_client);
+            drop_udp_client(&udp_clients, udp_client);
             
             udp_client = next_client;
         }
