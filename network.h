@@ -24,7 +24,10 @@
 enum{
     REBOOT_PRIMARY,
     REBOOT_SECONDARY,
-    REBOOT_BOTH
+    REBOOT_BOTH,
+    SHUTDOWN_PRIMARY,
+    SHUTDOWN_SECONDARY,
+    SHUTDOWN_BOTH,
 };
 
 struct client_info_t {

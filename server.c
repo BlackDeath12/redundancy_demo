@@ -13,15 +13,21 @@
 #define TCP_PORT 2020
 #define UDP_PORT 2020
 #define PEER_COMP_ADDR "10.0.2.11"
+#define PL_APP_ADDR "127.0.0.1"
+#define PL_APP_PORT 1234
+
 #define MAX_DESTINATION_SIZE 16
 #define MAX_BUFFER 1024
 #define ALIVE_MESSAGE "alive"
 
-#define PEER_TIMEOUT 5
+#define PEER_TIMEOUT 2
 #define ALIVE_MSG_TIME 1
 #define RECONNECT_TIME 1
 
 #define CMD_USAGE "Usage: ./server [Arguments (Optinal)] [local addr] [peer addr]\n"
+
+#define FOLDER_PATH "$HOME/redundancy_demo/"
+#define SCRIPT_NAME_MAX_LEN 30
 
 //Helper Functions
 bool time_elapsed();
@@ -81,6 +87,13 @@ int main(int argc, char** argv){
 
     server_sock = create_socket(local_addr, port);
     server_udp_sock = create_udp_socket(local_addr, udp_port);
+
+    //PilotLight App Address
+    struct sockaddr_in pl_app_addr = {
+        .sin_family = AF_INET,
+        .sin_port = htons(PL_APP_PORT),
+        .sin_addr.s_addr = inet_addr(PL_APP_ADDR)
+    };
 
     primary_computer ? printf("\nRunning as primary computer...\n") : printf("\nRunning as secondary computer...\n");
     printf("Server started!\n\n");
@@ -190,6 +203,15 @@ int main(int argc, char** argv){
             else if(strcmp(udp_client->udp_request, "reboot_both") == 0){
                 sim_case = REBOOT_BOTH;
             }
+            else if(strcmp(udp_client->udp_request, "shutdown_primary") == 0){
+                sim_case = SHUTDOWN_PRIMARY;
+            }
+            else if(strcmp(udp_client->udp_request, "shutdown_secondary") == 0){
+                sim_case = SHUTDOWN_SECONDARY;
+            }
+            else if(strcmp(udp_client->udp_request, "shutdown_both") == 0){
+                sim_case = SHUTDOWN_BOTH;
+            }
 
             drop_udp_client(&udp_clients, udp_client);
             
@@ -205,37 +227,61 @@ int main(int argc, char** argv){
 
             if(!runScript){
                 runScript = true;
-                system("/home/spacecloud/redundancy_demo/script.sh");
+
+                char *script = "script.sh"; 
+                char scriptPath[strlen(FOLDER_PATH) + strlen(script) + 1];
+                sprintf(scriptPath, "%s%s", FOLDER_PATH, script);
+                system(scriptPath);
             }
 
-            if(!primary_computer && time_elapsed(&reconnect_timer, RECONNECT_TIME)){
-                attempt_connection(&clients, peer_comp_addr, TCP_PORT, alive_buffer);
+            if(time_elapsed(&reconnect_timer, RECONNECT_TIME)){
+
+                if(!primary_computer){
+                    attempt_connection(&clients, peer_comp_addr, TCP_PORT, alive_buffer);
+                    char pl_status_msg[] = "primary_off&secondary_on";
+                    sendto(server_udp_sock, pl_status_msg, sizeof(pl_status_msg), 0, (struct sockaddr*)&pl_app_addr, sizeof(pl_app_addr));
+                }
+                else if(primary_computer){
+                    char pl_status_msg[] = "primary_on&secondary_off";
+                    sendto(server_udp_sock, pl_status_msg, sizeof(pl_status_msg), 0, (struct sockaddr*)&pl_app_addr, sizeof(pl_app_addr));
+                }
             }
+            
         }
         else{
             if(runScript){
                 runScript = false;
             }
+
+            if(time_elapsed(&reconnect_timer, RECONNECT_TIME)){
+                char pl_status_msg[] = "primary_on&secondary_on";
+                sendto(server_udp_sock, pl_status_msg, sizeof(pl_status_msg), 0, (struct sockaddr*)&pl_app_addr, sizeof(pl_app_addr));
+            }
+
         }
 
+        char *rebootScript = "reboot.sh";
+        char scriptPath[strlen(FOLDER_PATH) + strlen(rebootScript) + 1];
+        sprintf(scriptPath, "%s%s", FOLDER_PATH, rebootScript);
+
         switch (sim_case)
-        {
+        { 
         case REBOOT_PRIMARY:
             if(primary_computer){
-                system("/home/spacecloud/redundancy_demo/reboot.sh");
+                system(scriptPath);
             }
             sim_case = -1;
 
             break;
         case REBOOT_SECONDARY:
             if(!primary_computer){
-                system("/home/spacecloud/redundancy_demo/reboot.sh");
+                system(scriptPath);
             }
             sim_case = -1;
 
             break;
         case REBOOT_BOTH:
-            system("/home/spacecloud/redundancy_demo/reboot.sh");
+            system(scriptPath);
             sim_case = -1;
 
             break;
