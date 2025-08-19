@@ -261,7 +261,10 @@ int main(int argc, char** argv){
         }
 
         char *rebootScript = "reboot.sh";
+        char *shutdownScript = "shutdown.sh";
         char scriptPath[strlen(FOLDER_PATH) + strlen(rebootScript) + 1];
+        char shutdownPath[strlen(FOLDER_PATH) + strlen(shutdownScript) + 1];
+        sprintf(shutdownPath, "%s%s", FOLDER_PATH, shutdownScript);
         sprintf(scriptPath, "%s%s", FOLDER_PATH, rebootScript);
 
         switch (sim_case)
@@ -281,6 +284,25 @@ int main(int argc, char** argv){
 
             break;
         case REBOOT_BOTH:
+            system(scriptPath);
+            sim_case = -1;
+
+            break;
+        case SHUTDOWN_PRIMARY:
+            if(primary_computer){
+                system(scriptPath);
+            }
+            sim_case = -1;
+
+            break;
+        case SHUTDOWN_SECONDARY:
+            if(!primary_computer){
+                system(scriptPath);
+            }
+            sim_case = -1;
+
+            break;
+        case SHUTDOWN_BOTH:
             system(scriptPath);
             sim_case = -1;
 
