@@ -12,7 +12,7 @@
 
 #define TCP_PORT 2020
 #define UDP_PORT 2020
-#define PEER_COMP_ADDR "10.0.2.11"
+#define PEER_COMP_ADDR "10.0.2.10"
 #define PL_APP_ADDR "127.0.0.1"
 #define PL_APP_PORT 1234
 
@@ -290,20 +290,20 @@ int main(int argc, char** argv){
             break;
         case SHUTDOWN_PRIMARY:
             if(primary_computer){
-                system(scriptPath);
+                system(shutdownPath);
             }
             sim_case = -1;
 
             break;
         case SHUTDOWN_SECONDARY:
             if(!primary_computer){
-                system(scriptPath);
+                system(shutdownPath);
             }
             sim_case = -1;
 
             break;
         case SHUTDOWN_BOTH:
-            system(scriptPath);
+            system(shutdownPath);
             sim_case = -1;
 
             break;
