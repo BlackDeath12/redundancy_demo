@@ -12,7 +12,7 @@
 
 #define TCP_PORT 2020
 #define UDP_PORT 2020
-#define PEER_COMP_ADDR "10.0.2.10"
+#define PEER_COMP_ADDR "10.0.2.11"
 #define PL_APP_ADDR "127.0.0.1"
 #define PL_APP_PORT 1234
 
@@ -48,6 +48,13 @@ int main(int argc, char** argv){
 
     int sim_case = -1;
 
+    //PilotLight App Address
+    struct sockaddr_in pl_app_addr = {
+        .sin_family = AF_INET,
+        .sin_port = htons(PL_APP_PORT),
+        .sin_addr.s_addr = inet_addr(PL_APP_ADDR)
+    };
+
     if(argc > 1){
 
         int argIdx = 1;
@@ -72,6 +79,11 @@ int main(int argc, char** argv){
 
         if(argc > argIdx){
             peer_comp_addr = argv[argIdx];
+            argIdx++;
+        }
+        if(argc > argIdx){
+            pl_app_addr.sin_addr.s_addr = inet_addr(argv[argIdx]);
+            argIdx++;
         }
     }
     else{
@@ -87,13 +99,6 @@ int main(int argc, char** argv){
 
     server_sock = create_socket(local_addr, port);
     server_udp_sock = create_udp_socket(local_addr, udp_port);
-
-    //PilotLight App Address
-    struct sockaddr_in pl_app_addr = {
-        .sin_family = AF_INET,
-        .sin_port = htons(PL_APP_PORT),
-        .sin_addr.s_addr = inet_addr(PL_APP_ADDR)
-    };
 
     primary_computer ? printf("\nRunning as primary computer...\n") : printf("\nRunning as secondary computer...\n");
     printf("Server started!\n\n");
