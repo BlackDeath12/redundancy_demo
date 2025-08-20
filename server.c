@@ -24,7 +24,7 @@
 #define ALIVE_MSG_TIME 1
 #define RECONNECT_TIME 1
 
-#define CMD_USAGE "Usage: ./server [Arguments (Optinal)] [local addr] [peer addr]\n"
+#define CMD_USAGE "Usage: ./server [Arguments (Optinal)] [local addr] [peer addr] [pilot_light addr]\n"
 
 #define FOLDER_PATH "$HOME/redundancy_demo/"
 #define SCRIPT_NAME_MAX_LEN 30
@@ -78,12 +78,10 @@ int main(int argc, char** argv){
         local_addr = argv[argIdx++];
 
         if(argc > argIdx){
-            peer_comp_addr = argv[argIdx];
-            argIdx++;
+            peer_comp_addr = argv[argIdx++];
         }
         if(argc > argIdx){
-            pl_app_addr.sin_addr.s_addr = inet_addr(argv[argIdx]);
-            argIdx++;
+            pl_app_addr.sin_addr.s_addr = inet_addr(argv[argIdx++]);
         }
     }
     else{
